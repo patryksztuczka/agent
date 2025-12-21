@@ -1,7 +1,7 @@
-import * as React from "react"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { Send } from "lucide-react"
+import * as React from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Send } from "lucide-react";
 
 interface MessageInputProps {
   onSend?: (content: string) => void;
@@ -32,10 +32,10 @@ export function MessageInput({ onSend }: MessageInputProps) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="min-h-[60px] resize-none pr-12"
+          className="min-h-15 resize-none pr-12"
         />
-        <Button 
-          size="icon-sm" 
+        <Button
+          size="icon-sm"
           className="absolute right-2 bottom-2"
           disabled={!value.trim()}
           onClick={handleSend}
@@ -44,5 +44,5 @@ export function MessageInput({ onSend }: MessageInputProps) {
         </Button>
       </div>
     </div>
-  )
+  );
 }

@@ -1,31 +1,15 @@
-# Effect Package Template
+# Elysia with Bun runtime
 
-This template provides a solid foundation for building scalable and maintainable TypeScript package with Effect. 
-
-## Running Code
-
-This template leverages [tsx](https://tsx.is) to allow execution of TypeScript files via NodeJS as if they were written in plain JavaScript.
-
-To execute a file with `tsx`:
-
-```sh
-pnpm tsx ./path/to/the/file.ts
+## Getting Started
+To get started with this template, simply paste this command into your terminal:
+```bash
+bun create elysia ./elysia-example
 ```
 
-## Operations
-
-**Building**
-
-To build the package:
-
-```sh
-pnpm build
+## Development
+To start the development server run:
+```bash
+bun run dev
 ```
 
-**Testing**
-
-To test the package:
-
-```sh
-pnpm test
-```
+Open http://localhost:3000/ with your browser to see the result.
