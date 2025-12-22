@@ -1,18 +1,15 @@
 {
-  "name": "agent-backend",
-  "version": "0.1.0",
+  "name": "server",
   "scripts": {
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.51",
-    "ai": "^5.0.116",
-    "elysia": "latest"
+    "hono": "^4.11.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/eslint-plugin-security": "^3.0.0",
-    "bun-types": "latest",
+    "@types/bun": "latest",
     "eslint": "^9.39.2",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-security": "^3.0.1",
@@ -21,6 +18,5 @@
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.50.0"
-  },
-  "module": "src/index.js"
+  }
 }
