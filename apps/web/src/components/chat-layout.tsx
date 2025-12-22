@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SessionSidebar } from "@/components/session-sidebar";
 import { ChatInterface } from "@/components/chat-interface";
 import { MemoryPanel } from "@/components/memory-panel";
 import { fetchSessions } from "@/data-access-layer/sessions";
-import { fetchMessages } from "@/data-access-layer/messages";
+import { fetchMessages, sendMessage } from "@/data-access-layer/messages";
 import type { MemoryEntry } from "@/types";
 
 const MOCK_SHORT_MEMORY: MemoryEntry[] = [
@@ -25,43 +25,67 @@ const MOCK_LONG_MEMORY: MemoryEntry[] = [
 
 export function ChatLayout() {
   const [activeSessionId, setActiveSessionId] = useState<string | undefined>();
+  const queryClient = useQueryClient();
 
   const { data: sessions = [], isLoading: isSessionsLoading } = useQuery({
-    queryKey: ['sessions'],
+    queryKey: ["sessions"],
     queryFn: fetchSessions,
   });
 
   useEffect(() => {
-    if (sessions.length > 0 && !activeSessionId) {
-      setActiveSessionId(sessions[0].id);
+    if (!isSessionsLoading && !activeSessionId) {
+      if (sessions.length > 0) {
+        setActiveSessionId(sessions[0].id);
+      } else {
+        setActiveSessionId(crypto.randomUUID());
+      }
     }
-  }, [sessions, activeSessionId]);
+  }, [sessions, activeSessionId, isSessionsLoading]);
 
   const { data: messages = [], isLoading: isMessagesLoading } = useQuery({
-    queryKey: ['messages', activeSessionId],
+    queryKey: ["messages", activeSessionId],
     queryFn: () => fetchMessages(activeSessionId!),
     enabled: !!activeSessionId,
   });
 
+  const mutation = useMutation({
+    mutationFn: ({
+      sessionId,
+      prompt,
+    }: {
+      sessionId: string;
+      prompt: string;
+    }) => sendMessage(sessionId, prompt),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["messages", activeSessionId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    },
+  });
+
   const handleSendMessage = (content: string) => {
-    console.log("Sending message:", content);
+    if (!activeSessionId) return;
+    mutation.mutate({ sessionId: activeSessionId, prompt: content });
   };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      <SessionSidebar 
-        sessions={sessions} 
+      <SessionSidebar
+        sessions={sessions}
         activeSessionId={activeSessionId}
-        isLoading={isSessionsLoading} 
+        isLoading={isSessionsLoading}
+        onSessionSelect={(id) => setActiveSessionId(id)}
+        onNewSession={() => setActiveSessionId(crypto.randomUUID())}
       />
       <main className="flex flex-1 flex-col overflow-hidden">
-        <ChatInterface 
-          messages={messages} 
+        <ChatInterface
+          messages={messages}
           onSendMessage={handleSendMessage}
-          isLoading={isMessagesLoading}
+          isLoading={isMessagesLoading || mutation.isPending}
         />
       </main>
       <MemoryPanel shortTerm={MOCK_SHORT_MEMORY} longTerm={MOCK_LONG_MEMORY} />
     </div>
-  )
+  );
 }

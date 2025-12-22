@@ -9,8 +9,9 @@ export async function fetchMessages(sessionId: string): Promise<Message[]> {
   const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/messages`);
   
   if (!response.ok) {
+    // If session doesn't exist yet, it's fine to return empty messages
     if (response.status === 404) {
-      throw new Error("Session not found");
+      return [];
     }
     throw new Error("Failed to fetch messages");
   }
@@ -19,4 +20,19 @@ export async function fetchMessages(sessionId: string): Promise<Message[]> {
   const validatedData = MessagesResponseSchema.parse(rawData);
   
   return validatedData;
+}
+
+export async function sendMessage(sessionId: string, prompt: string): Promise<Message> {
+  const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to send message");
+  }
+
+  const rawData = await response.json();
+  return MessageSchema.parse(rawData);
 }

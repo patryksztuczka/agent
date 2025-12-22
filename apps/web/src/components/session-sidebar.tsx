@@ -7,14 +7,22 @@ interface SessionSidebarProps {
   sessions: Session[];
   activeSessionId?: string;
   isLoading?: boolean;
+  onSessionSelect?: (id: string) => void;
+  onNewSession?: () => void;
 }
 
-export function SessionSidebar({ sessions, activeSessionId, isLoading }: SessionSidebarProps) {
+export function SessionSidebar({ 
+  sessions, 
+  activeSessionId, 
+  isLoading,
+  onSessionSelect,
+  onNewSession
+}: SessionSidebarProps) {
   return (
     <aside className="flex h-full w-64 flex-col border-r bg-muted/30">
       <div className="flex items-center justify-between border-b p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sessions</h2>
-        <Button size="icon-xs" variant="ghost">
+        <Button size="icon-xs" variant="ghost" onClick={onNewSession}>
           <Plus className="size-4" />
         </Button>
       </div>
@@ -23,21 +31,22 @@ export function SessionSidebar({ sessions, activeSessionId, isLoading }: Session
           <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
             Loading...
           </div>
-        ) : sessions.length === 0 ? (
-          <EmptyState message="No sessions yet" />
         ) : (
           <div className="space-y-1">
-            {sessions.map((session) => (
+            {sessions.length > 0 && sessions.map((session) => (
               <Button
                 key={session.id}
                 variant={activeSessionId === session.id ? "secondary" : "ghost"}
                 className="w-full justify-start text-left"
+                onClick={() => onSessionSelect?.(session.id)}
               >
                  <MessageCirclePlus className="mr-2 size-4" />
                 <span className="truncate">{session.name}</span>
               </Button>
-
             ))}
+            {sessions.length === 0 && !isLoading && (
+              <EmptyState message="No sessions yet" />
+            )}
           </div>
         )}
       </div>
