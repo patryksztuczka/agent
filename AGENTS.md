@@ -1,50 +1,18 @@
 # Agent Development Guidelines
 
-## Build/Lint/Test Commands
+## Project Structure & Commands
+- **Backend (`apps/server`)**: Bun + Hono. Run: `bun run dev`. Database: `bunx prisma migrate dev`.
+- **Frontend (`apps/web`)**: Bun + Vite + React. Run: `bun run dev`, `bun run build`, `bun run lint`.
+- **Package Manager**: Always use `bun`.
 
-### Backend (apps/backend)
+## Code Style & Conventions
+- **Naming**: PascalCase for components/interfaces, camelCase for functions, kebab-case for filenames.
+- **Web Imports**: Use `@/` path alias (e.g., `@/components/ui/button`).
+- **Formatting**: 2-space indentation, 80-char width, single quotes, semicolons (Prettier/ESLint).
+- **UI (Web)**: Use shadcn/ui patterns and Tailwind CSS with `cn()` helper from `@/lib/utils`.
+- **TypeScript**: Strict mode enabled. Use functional components with explicit types.
 
-- `pnpm build` - Full build (ESM + CJS)
-- `pnpm test` - Run all tests
-- `pnpm test <filename>` - Run single test file
-- `pnpm lint` - Lint code
-- `pnpm check` - Type check
-- `pnpm tsx ./file.ts` - Execute TypeScript file
-
-### Web (apps/web)
-
-- `npm run dev` - Development server
-- `npm run build` - Production build
-- `npm run lint` - Lint code
-
-## Code Style Guidelines
-
-### Import Patterns
-
-- Backend: Namespace imports for Effect (`import * as Effect from "effect/Effect"`)
-- Web: Named imports with path aliases (`import { Component } from "@/components/component"`)
-
-### Formatting (Backend)
-
-- 2-space indentation, 80-char line width
-- Single quotes, no trailing commas
-- Use dprint formatter via ESLint
-
-### TypeScript
-
-- Strict mode enabled everywhere
-- PascalCase for components/interfaces, camelCase for functions
-- Kebab-case for files (`component-name.tsx`)
-- Unused vars prefixed with underscore allowed
-
-### Component Patterns (Web)
-
-- Use shadcn/ui patterns with data attributes
-- Class Variance Authority for variants
-- Tailwind utility-first styling with `cn()` helper
-
-### Testing
-
-- Backend: Vitest with Effect integration
-- Test files: `test/**/*.test.ts`
-- Use `describe/it/expect` structure
+## Logic & Patterns
+- **Server**: Hono for API routes. Bun for runtime. Prisma for ORM.
+- **Web**: React hooks for state. Tailwind for styling.
+- **Testing**: No tests currently; use `bun test` for any new tests in `**/*.test.ts`.
