@@ -1,13 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
 import { SessionSidebar } from "@/components/session-sidebar";
 import { ChatInterface } from "@/components/chat-interface";
 import { MemoryPanel } from "@/components/memory-panel";
-import type { Message, Session, MemoryEntry } from "@/types";
-
-const MOCK_SESSIONS: Session[] = [
-  { id: "1", title: "Personal Assistant Ideas", lastMessageAt: new Date() },
-  { id: "2", title: "Project Planning", lastMessageAt: new Date() },
-  { id: "3", title: "Learning React", lastMessageAt: new Date() },
-];
+import { fetchSessions } from "@/data-access-layer/sessions";
+import type { Message, MemoryEntry } from "@/types";
 
 const MOCK_MESSAGES: Message[] = [
   {
@@ -49,6 +45,11 @@ const MOCK_LONG_MEMORY: MemoryEntry[] = [
 ];
 
 export function ChatLayout() {
+  const { data: sessions = [], isLoading } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: fetchSessions,
+  });
+
   const handleSendMessage = (content: string) => {
     console.log("Sending message:", content);
     // In a real app, you would update the messages state here
@@ -56,7 +57,11 @@ export function ChatLayout() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      <SessionSidebar sessions={MOCK_SESSIONS} activeSessionId="1" />
+      <SessionSidebar 
+        sessions={sessions} 
+        activeSessionId={sessions[0]?.id}
+        isLoading={isLoading} 
+      />
       <main className="flex flex-1 flex-col overflow-hidden">
         <ChatInterface 
           messages={MOCK_MESSAGES} 

@@ -5,12 +5,6 @@ export interface Message {
   timestamp: Date;
 }
 
-export interface Session {
-  id: string;
-  title: string;
-  lastMessageAt: Date;
-}
-
 export interface MemoryEntry {
   id: string;
   key: string;
