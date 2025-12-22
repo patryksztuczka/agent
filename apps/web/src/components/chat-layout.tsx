@@ -1,32 +1,11 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SessionSidebar } from "@/components/session-sidebar";
 import { ChatInterface } from "@/components/chat-interface";
 import { MemoryPanel } from "@/components/memory-panel";
 import { fetchSessions } from "@/data-access-layer/sessions";
-import type { Message, MemoryEntry } from "@/types";
-
-const MOCK_MESSAGES: Message[] = [
-  {
-    id: "1",
-    role: "assistant",
-    content:
-      "Hello! I am your personal AI assistant. How can I help you today?",
-    timestamp: new Date(Date.now() - 1000 * 60 * 5),
-  },
-  {
-    id: "2",
-    role: "user",
-    content: "Can you help me remember my project deadlines?",
-    timestamp: new Date(Date.now() - 1000 * 60 * 4),
-  },
-  {
-    id: "3",
-    role: "assistant",
-    content:
-      "Of course! I'll keep track of them in my long-term memory. What are the dates?",
-    timestamp: new Date(Date.now() - 1000 * 60 * 3),
-  },
-];
+import { fetchMessages } from "@/data-access-layer/messages";
+import type { MemoryEntry } from "@/types";
 
 const MOCK_SHORT_MEMORY: MemoryEntry[] = [
   { id: "s1", key: "current_topic", value: "Project deadlines" },
@@ -45,27 +24,41 @@ const MOCK_LONG_MEMORY: MemoryEntry[] = [
 ];
 
 export function ChatLayout() {
-  const { data: sessions = [], isLoading } = useQuery({
+  const [activeSessionId, setActiveSessionId] = useState<string | undefined>();
+
+  const { data: sessions = [], isLoading: isSessionsLoading } = useQuery({
     queryKey: ['sessions'],
     queryFn: fetchSessions,
   });
 
+  useEffect(() => {
+    if (sessions.length > 0 && !activeSessionId) {
+      setActiveSessionId(sessions[0].id);
+    }
+  }, [sessions, activeSessionId]);
+
+  const { data: messages = [], isLoading: isMessagesLoading } = useQuery({
+    queryKey: ['messages', activeSessionId],
+    queryFn: () => fetchMessages(activeSessionId!),
+    enabled: !!activeSessionId,
+  });
+
   const handleSendMessage = (content: string) => {
     console.log("Sending message:", content);
-    // In a real app, you would update the messages state here
   };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <SessionSidebar 
         sessions={sessions} 
-        activeSessionId={sessions[0]?.id}
-        isLoading={isLoading} 
+        activeSessionId={activeSessionId}
+        isLoading={isSessionsLoading} 
       />
       <main className="flex flex-1 flex-col overflow-hidden">
         <ChatInterface 
-          messages={MOCK_MESSAGES} 
+          messages={messages} 
           onSendMessage={handleSendMessage}
+          isLoading={isMessagesLoading}
         />
       </main>
       <MemoryPanel shortTerm={MOCK_SHORT_MEMORY} longTerm={MOCK_LONG_MEMORY} />

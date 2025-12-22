@@ -1,4 +1,4 @@
-import type { Message } from "@/types"
+import type { Message } from "@/schemas/messages"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 
@@ -19,7 +19,7 @@ export function MessageItem({ message }: MessageItemProps) {
           {isUser ? "You" : "Assistant"}
         </Badge>
         <span className="text-[10px] text-muted-foreground">
-          {new Date(message.timestamp).toLocaleTimeString()}
+          {message.createdAt.toLocaleTimeString()}
         </span>
       </div>
       <div className={cn(

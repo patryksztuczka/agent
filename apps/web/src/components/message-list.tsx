@@ -1,4 +1,4 @@
-import type { Message } from "@/types"
+import type { Message } from "@/schemas/messages"
 import { MessageItem } from "@/components/message-item"
 import { EmptyState } from "@/components/empty-state"
 
