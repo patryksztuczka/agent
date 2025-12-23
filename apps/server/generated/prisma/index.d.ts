@@ -996,7 +996,6 @@ export namespace Prisma {
   export type SessionMinAggregateOutputType = {
     id: string | null
     name: string | null
-    userId: string | null
     lastMessageAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -1005,7 +1004,6 @@ export namespace Prisma {
   export type SessionMaxAggregateOutputType = {
     id: string | null
     name: string | null
-    userId: string | null
     lastMessageAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -1014,7 +1012,6 @@ export namespace Prisma {
   export type SessionCountAggregateOutputType = {
     id: number
     name: number
-    userId: number
     lastMessageAt: number
     createdAt: number
     updatedAt: number
@@ -1025,7 +1022,6 @@ export namespace Prisma {
   export type SessionMinAggregateInputType = {
     id?: true
     name?: true
-    userId?: true
     lastMessageAt?: true
     createdAt?: true
     updatedAt?: true
@@ -1034,7 +1030,6 @@ export namespace Prisma {
   export type SessionMaxAggregateInputType = {
     id?: true
     name?: true
-    userId?: true
     lastMessageAt?: true
     createdAt?: true
     updatedAt?: true
@@ -1043,7 +1038,6 @@ export namespace Prisma {
   export type SessionCountAggregateInputType = {
     id?: true
     name?: true
-    userId?: true
     lastMessageAt?: true
     createdAt?: true
     updatedAt?: true
@@ -1125,7 +1119,6 @@ export namespace Prisma {
   export type SessionGroupByOutputType = {
     id: string
     name: string
-    userId: string
     lastMessageAt: Date
     createdAt: Date
     updatedAt: Date
@@ -1151,7 +1144,6 @@ export namespace Prisma {
   export type SessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
-    userId?: boolean
     lastMessageAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -1162,7 +1154,6 @@ export namespace Prisma {
   export type SessionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
-    userId?: boolean
     lastMessageAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -1171,7 +1162,6 @@ export namespace Prisma {
   export type SessionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     name?: boolean
-    userId?: boolean
     lastMessageAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -1180,13 +1170,12 @@ export namespace Prisma {
   export type SessionSelectScalar = {
     id?: boolean
     name?: boolean
-    userId?: boolean
     lastMessageAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type SessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "userId" | "lastMessageAt" | "createdAt" | "updatedAt", ExtArgs["result"]["session"]>
+  export type SessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "lastMessageAt" | "createdAt" | "updatedAt", ExtArgs["result"]["session"]>
   export type SessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     messages?: boolean | Session$messagesArgs<ExtArgs>
     _count?: boolean | SessionCountOutputTypeDefaultArgs<ExtArgs>
@@ -1202,7 +1191,6 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       name: string
-      userId: string
       lastMessageAt: Date
       createdAt: Date
       updatedAt: Date
@@ -1632,7 +1620,6 @@ export namespace Prisma {
   interface SessionFieldRefs {
     readonly id: FieldRef<"Session", 'String'>
     readonly name: FieldRef<"Session", 'String'>
-    readonly userId: FieldRef<"Session", 'String'>
     readonly lastMessageAt: FieldRef<"Session", 'DateTime'>
     readonly createdAt: FieldRef<"Session", 'DateTime'>
     readonly updatedAt: FieldRef<"Session", 'DateTime'>
@@ -3134,7 +3121,6 @@ export namespace Prisma {
   export const SessionScalarFieldEnum: {
     id: 'id',
     name: 'name',
-    userId: 'userId',
     lastMessageAt: 'lastMessageAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -3197,7 +3183,6 @@ export namespace Prisma {
     NOT?: SessionWhereInput | SessionWhereInput[]
     id?: StringFilter<"Session"> | string
     name?: StringFilter<"Session"> | string
-    userId?: StringFilter<"Session"> | string
     lastMessageAt?: DateTimeFilter<"Session"> | Date | string
     createdAt?: DateTimeFilter<"Session"> | Date | string
     updatedAt?: DateTimeFilter<"Session"> | Date | string
@@ -3207,7 +3192,6 @@ export namespace Prisma {
   export type SessionOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
-    userId?: SortOrder
     lastMessageAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -3220,7 +3204,6 @@ export namespace Prisma {
     OR?: SessionWhereInput[]
     NOT?: SessionWhereInput | SessionWhereInput[]
     name?: StringFilter<"Session"> | string
-    userId?: StringFilter<"Session"> | string
     lastMessageAt?: DateTimeFilter<"Session"> | Date | string
     createdAt?: DateTimeFilter<"Session"> | Date | string
     updatedAt?: DateTimeFilter<"Session"> | Date | string
@@ -3230,7 +3213,6 @@ export namespace Prisma {
   export type SessionOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
-    userId?: SortOrder
     lastMessageAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -3245,7 +3227,6 @@ export namespace Prisma {
     NOT?: SessionScalarWhereWithAggregatesInput | SessionScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Session"> | string
     name?: StringWithAggregatesFilter<"Session"> | string
-    userId?: StringWithAggregatesFilter<"Session"> | string
     lastMessageAt?: DateTimeWithAggregatesFilter<"Session"> | Date | string
     createdAt?: DateTimeWithAggregatesFilter<"Session"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Session"> | Date | string
@@ -3309,7 +3290,6 @@ export namespace Prisma {
   export type SessionCreateInput = {
     id?: string
     name?: string
-    userId: string
     lastMessageAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -3319,7 +3299,6 @@ export namespace Prisma {
   export type SessionUncheckedCreateInput = {
     id?: string
     name?: string
-    userId: string
     lastMessageAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -3329,7 +3308,6 @@ export namespace Prisma {
   export type SessionUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
     lastMessageAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -3339,7 +3317,6 @@ export namespace Prisma {
   export type SessionUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
     lastMessageAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -3349,7 +3326,6 @@ export namespace Prisma {
   export type SessionCreateManyInput = {
     id?: string
     name?: string
-    userId: string
     lastMessageAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -3358,7 +3334,6 @@ export namespace Prisma {
   export type SessionUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
     lastMessageAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -3367,7 +3342,6 @@ export namespace Prisma {
   export type SessionUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
     lastMessageAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -3466,7 +3440,6 @@ export namespace Prisma {
   export type SessionCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
-    userId?: SortOrder
     lastMessageAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -3475,7 +3448,6 @@ export namespace Prisma {
   export type SessionMaxOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
-    userId?: SortOrder
     lastMessageAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -3484,7 +3456,6 @@ export namespace Prisma {
   export type SessionMinOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
-    userId?: SortOrder
     lastMessageAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -3734,7 +3705,6 @@ export namespace Prisma {
   export type SessionCreateWithoutMessagesInput = {
     id?: string
     name?: string
-    userId: string
     lastMessageAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -3743,7 +3713,6 @@ export namespace Prisma {
   export type SessionUncheckedCreateWithoutMessagesInput = {
     id?: string
     name?: string
-    userId: string
     lastMessageAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -3768,7 +3737,6 @@ export namespace Prisma {
   export type SessionUpdateWithoutMessagesInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
     lastMessageAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -3777,7 +3745,6 @@ export namespace Prisma {
   export type SessionUncheckedUpdateWithoutMessagesInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
     lastMessageAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

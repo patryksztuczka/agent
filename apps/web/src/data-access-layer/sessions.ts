@@ -16,3 +16,21 @@ export async function fetchSessions(): Promise<Session[]> {
 
   return validatedData;
 }
+
+export async function createSession(
+  prompt?: string,
+  id?: string,
+): Promise<Session> {
+  const response = await fetch(`${API_BASE_URL}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, id }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create session");
+  }
+
+  const rawData = await response.json();
+  return SessionSchema.parse(rawData);
+}

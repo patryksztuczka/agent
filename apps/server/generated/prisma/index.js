@@ -93,7 +93,6 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
 exports.Prisma.SessionScalarFieldEnum = {
   id: 'id',
   name: 'name',
-  userId: 'userId',
   lastMessageAt: 'lastMessageAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -125,10 +124,10 @@ const config = {
   "clientVersion": "7.2.0",
   "engineVersion": "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3",
   "activeProvider": "sqlite",
-  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n}\n\nmodel Session {\n  id            String    @id @default(cuid())\n  name          String    @default(\"New conversation\")\n  userId        String\n  lastMessageAt DateTime  @default(now())\n  createdAt     DateTime  @default(now())\n  updatedAt     DateTime  @updatedAt\n  messages      Message[]\n}\n\nmodel Message {\n  id        String   @id @default(cuid())\n  role      String\n  content   String\n  createdAt DateTime @default(now())\n  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)\n  sessionId String\n}\n"
+  "inlineSchema": "generator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n}\n\nmodel Session {\n  id            String    @id @default(uuid())\n  name          String    @default(\"New conversation\")\n  lastMessageAt DateTime  @default(now())\n  createdAt     DateTime  @default(now())\n  updatedAt     DateTime  @updatedAt\n  messages      Message[]\n}\n\nmodel Message {\n  id        String   @id @default(uuid())\n  role      String\n  content   String\n  createdAt DateTime @default(now())\n  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)\n  sessionId String\n}\n"
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Session\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"userId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lastMessageAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"messages\",\"kind\":\"object\",\"type\":\"Message\",\"relationName\":\"MessageToSession\"}],\"dbName\":null},\"Message\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"role\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"content\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"session\",\"kind\":\"object\",\"type\":\"Session\",\"relationName\":\"MessageToSession\"},{\"name\":\"sessionId\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Session\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lastMessageAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"messages\",\"kind\":\"object\",\"type\":\"Message\",\"relationName\":\"MessageToSession\"}],\"dbName\":null},\"Message\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"role\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"content\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"session\",\"kind\":\"object\",\"type\":\"Session\",\"relationName\":\"MessageToSession\"},{\"name\":\"sessionId\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 defineDmmfProperty(exports.Prisma, config.runtimeDataModel)
 config.compilerWasm = {
       getRuntime: async () => require('./query_compiler_bg.js'),
