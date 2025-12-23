@@ -1,28 +1,42 @@
 import { Hono } from 'hono';
-import { CoreMessage } from 'ai';
+import { streamText } from 'hono/streaming';
+import { ModelMessage } from 'ai';
 import { google } from '@ai-sdk/google';
 import { prisma } from '../../lib/prisma';
-import { ask, generateSessionName } from './messages.service';
+import { generateMessageStream, generateSessionName } from './messages.service';
+import { tryCatch } from '../../lib/try-catch';
 
 const messages = new Hono();
 
 messages.get('/', async (c) => {
   const sessionId = c.req.param('id');
 
-  const session = await prisma.session.findUnique({
-    where: { id: sessionId },
-  });
+  const { data: session, error: sessionError } = await tryCatch(
+    prisma.session.findUnique({
+      where: { id: sessionId },
+    }),
+  );
+
+  if (sessionError) {
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 
   if (!session) {
     return c.json({ error: 'Session not found' }, 404);
   }
 
-  const allMessages = await prisma.message.findMany({
-    where: { sessionId },
-    orderBy: {
-      createdAt: 'asc',
-    },
-  });
+  const { data: allMessages, error: messagesError } = await tryCatch(
+    prisma.message.findMany({
+      where: { sessionId },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    }),
+  );
+
+  if (messagesError) {
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 
   return c.json(allMessages);
 });
@@ -35,79 +49,144 @@ messages.post('/', async (c) => {
     return c.json({ error: 'Prompt is required' }, 400);
   }
 
-  let session = await prisma.session.findUnique({
-    where: { id: sessionId },
-    include: { _count: { select: { messages: true } } },
-  });
+  const { data: session, error: findSessionError } = await tryCatch(
+    prisma.session.findUnique({
+      where: { id: sessionId },
+    }),
+  );
+
+  if (findSessionError) {
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 
   if (!session) {
-    session = await prisma.session.create({
-      data: {
-        id: sessionId,
-        userId: 'user_1',
-        name: 'New conversation',
-      },
-      include: { _count: { select: { messages: true } } },
-    });
-  }
-
-  await prisma.message.create({
-    data: {
-      role: 'user',
-      content: prompt,
-      sessionId,
-    },
-  });
-
-  await prisma.session.update({
-    where: { id: sessionId },
-    data: { lastMessageAt: new Date() },
-  });
-
-  if (session._count.messages === 0 || session.name === 'New conversation') {
-    const newName = await generateSessionName(
-      prompt,
-      google('gemini-2.0-flash'),
+    const { data: nameResult } = await tryCatch(
+      generateSessionName(prompt, google('gemini-2.0-flash')),
     );
-    await prisma.session.update({
-      where: { id: sessionId },
-      data: { name: newName },
-    });
+
+    const { data: newSession, error: createSessionError } = await tryCatch(
+      prisma.session.create({
+        data: {
+          id: sessionId,
+          name: nameResult || 'New conversation',
+        },
+      }),
+    );
+
+    if (createSessionError || !newSession) {
+      return c.json({ error: 'Failed to create session' }, 500);
+    }
+    session = newSession;
   }
 
-  const pastMessages = await prisma.message.findMany({
-    where: { sessionId },
-    select: {
-      role: true,
-      content: true,
-    },
-    orderBy: {
-      createdAt: 'asc',
-    },
-    take: 20,
-  });
+  const { data: userMessage, error: createUserMessageError } = await tryCatch(
+    prisma.message.create({
+      data: {
+        role: 'user',
+        content: prompt,
+        sessionId: session.id,
+      },
+    }),
+  );
 
-  const coreMessages: CoreMessage[] = pastMessages.map((m) => ({
+  if (createUserMessageError || !userMessage) {
+    return c.json({ error: 'Failed to save user message' }, 500);
+  }
+
+  const { error: updateSessionError } = await tryCatch(
+    prisma.session.update({
+      where: { id: sessionId },
+      data: { lastMessageAt: new Date() },
+    }),
+  );
+
+  if (updateSessionError) {
+    return c.json({ error: 'Failed to update session timestamp' }, 500);
+  }
+
+  return c.json(userMessage);
+});
+
+messages.post('/completion', async (c) => {
+  const sessionId = c.req.param('id');
+
+  const { data: session, error: findSessionError } = await tryCatch(
+    prisma.session.findUnique({
+      where: { id: sessionId },
+    }),
+  );
+
+  if (findSessionError) {
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+
+  if (!session) {
+    return c.json({ error: 'Session not found' }, 404);
+  }
+
+  const { data: pastMessages, error: findPastMessagesError } = await tryCatch(
+    prisma.message.findMany({
+      where: { sessionId },
+      select: {
+        role: true,
+        content: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      take: 20,
+    }),
+  );
+
+  if (findPastMessagesError || !pastMessages) {
+    return c.json({ error: 'Internal server error' }, 500);
+  }
+
+  const coreMessages: ModelMessage[] = pastMessages.map((m) => ({
     role: m.role as 'user' | 'assistant',
     content: m.content,
   }));
 
-  const answer = await ask(coreMessages, google('gemini-2.0-flash'));
+  const result = await generateMessageStream(
+    coreMessages,
+    google('gemini-2.0-flash'),
+  );
 
-  const llmAnswer = await prisma.message.create({
-    data: {
-      role: 'assistant',
-      content: answer,
-      sessionId,
-    },
+  return streamText(c, async (stream) => {
+    let fullContent = '';
+    for await (const textPart of result.textStream) {
+      fullContent += textPart;
+      stream.writeln(textPart);
+    }
+
+    const { error: createAssistantMessageError } = await tryCatch(
+      prisma.message.create({
+        data: {
+          role: 'assistant',
+          content: fullContent,
+          sessionId: session.id,
+        },
+      }),
+    );
+
+    if (createAssistantMessageError) {
+      console.error(
+        'Failed to save assistant message:',
+        createAssistantMessageError,
+      );
+    }
+
+    const { error: updateSessionError } = await tryCatch(
+      prisma.session.update({
+        where: { id: sessionId },
+        data: { lastMessageAt: new Date() },
+      }),
+    );
+
+    if (updateSessionError) {
+      console.error('Failed to update session timestamp', updateSessionError);
+    }
   });
-
-  await prisma.session.update({
-    where: { id: sessionId },
-    data: { lastMessageAt: new Date() },
-  });
-
-  return c.json(llmAnswer);
 });
 
 export default messages;

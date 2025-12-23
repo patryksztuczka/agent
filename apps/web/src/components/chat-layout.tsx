@@ -1,46 +1,18 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { v4 as uuidv4 } from "uuid";
 import { SessionSidebar } from "@/components/session-sidebar";
 import { ChatInterface } from "@/components/chat-interface";
 import { MemoryPanel } from "@/components/memory-panel";
-import { fetchSessions } from "@/data-access-layer/sessions";
-import { fetchMessages, sendMessage } from "@/data-access-layer/messages";
-import type { MemoryEntry } from "@/types";
-
-const MOCK_SHORT_MEMORY: MemoryEntry[] = [
-  { id: "s1", key: "current_topic", value: "Project deadlines" },
-  { id: "s2", key: "user_mood", value: "Productive" },
-];
-
-const MOCK_LONG_MEMORY: MemoryEntry[] = [
-  { id: "l1", key: "user_name", value: "John Doe", category: "personal" },
-  {
-    id: "l2",
-    key: "preferred_framework",
-    value: "React/Next.js",
-    category: "tech",
-  },
-  { id: "l3", key: "birthday", value: "March 15th", category: "personal" },
-];
+import { createSession } from "@/data-access-layer/sessions";
+import { fetchMessages, saveMessage, getCompletion } from "@/data-access-layer/messages";
+import type { Session } from "@/schemas/sessions";
+import type { Message } from "@/schemas/messages";
 
 export function ChatLayout() {
   const [activeSessionId, setActiveSessionId] = useState<string | undefined>();
+  const [streamingMessage, setStreamingMessage] = useState<string>("");
   const queryClient = useQueryClient();
-
-  const { data: sessions = [], isLoading: isSessionsLoading } = useQuery({
-    queryKey: ["sessions"],
-    queryFn: fetchSessions,
-  });
-
-  useEffect(() => {
-    if (!isSessionsLoading && !activeSessionId) {
-      if (sessions.length > 0) {
-        setActiveSessionId(sessions[0].id);
-      } else {
-        setActiveSessionId(crypto.randomUUID());
-      }
-    }
-  }, [sessions, activeSessionId, isSessionsLoading]);
 
   const { data: messages = [], isLoading: isMessagesLoading } = useQuery({
     queryKey: ["messages", activeSessionId],
@@ -48,44 +20,155 @@ export function ChatLayout() {
     enabled: !!activeSessionId,
   });
 
-  const mutation = useMutation({
+  const sendMessageMutation = useMutation({
     mutationFn: ({
       sessionId,
-      prompt,
+      content,
     }: {
       sessionId: string;
-      prompt: string;
-    }) => sendMessage(sessionId, prompt),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["messages", activeSessionId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      content: string;
+    }) => saveMessage(sessionId, content),
+    onMutate: async ({ sessionId, content }) => {
+      await queryClient.cancelQueries({ queryKey: ["messages", sessionId] });
+      const previousMessages = queryClient.getQueryData<Message[]>([
+        "messages",
+        sessionId,
+      ]);
+
+      queryClient.setQueryData<Message[]>(["messages", sessionId], (old) => [
+        ...(old || []),
+        {
+          id: uuidv4(),
+          content,
+          role: "user",
+          sessionId,
+          createdAt: new Date(),
+        },
+      ]);
+
+      return { previousMessages };
+    },
+    onError: (_err, { sessionId }, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(
+          ["messages", sessionId],
+          context.previousMessages,
+        );
+      }
+    },
+    onSettled: (_data, _error, { sessionId }) => {
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
     },
   });
 
-  const handleSendMessage = (content: string) => {
-    if (!activeSessionId) return;
-    mutation.mutate({ sessionId: activeSessionId, prompt: content });
+  const createSessionMutation = useMutation({
+    mutationKey: ["session"],
+    mutationFn: ({ prompt, id }: { prompt: string; id: string }) =>
+      createSession(prompt, id),
+    onMutate: async ({ prompt, id }) => {
+      await queryClient.cancelQueries({ queryKey: ["sessions"] });
+      await queryClient.cancelQueries({ queryKey: ["messages", id] });
+      const previousSessions = queryClient.getQueryData<Session[]>([
+        "sessions",
+      ]);
+
+      const newSession: Session = {
+        id,
+        name: "New conversation...",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastMessageAt: new Date(),
+      };
+
+      queryClient.setQueryData<Session[]>(["sessions"], (old) => [
+        newSession,
+        ...(old || []),
+      ]);
+
+      // Also set optimistic message for the new session
+      queryClient.setQueryData<Message[]>(["messages", id], [
+        {
+          id: uuidv4(),
+          content: prompt,
+          role: "user",
+          sessionId: id,
+          createdAt: new Date(),
+        },
+      ]);
+
+      return { previousSessions };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousSessions) {
+        queryClient.setQueryData(["sessions"], context.previousSessions);
+      }
+    },
+    onSettled: (_data, _error, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["messages", variables.id] });
+    },
+  });
+
+  const handleSendMessage = async (content: string) => {
+    let sessionId = activeSessionId;
+
+    if (!sessionId) {
+      const newSessionId = uuidv4();
+      
+      // Optimistically set the message data before triggering any state updates
+      queryClient.setQueryData<Message[]>(["messages", newSessionId], [
+        {
+          id: uuidv4(),
+          content,
+          role: "user",
+          sessionId: newSessionId,
+          createdAt: new Date(),
+        },
+      ]);
+
+      setActiveSessionId(newSessionId);
+      
+      const session = await createSessionMutation.mutateAsync({
+        prompt: content,
+        id: newSessionId,
+      });
+      sessionId = session.id;
+    } else {
+      await sendMessageMutation.mutateAsync({ sessionId, content });
+    }
+
+    setStreamingMessage("");
+    try {
+      const stream = getCompletion(sessionId);
+      let fullContent = "";
+      for await (const chunk of stream) {
+        fullContent += chunk;
+        setStreamingMessage(fullContent);
+      }
+      setStreamingMessage("");
+      queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+    } catch (error) {
+      console.error("Completion error:", error);
+    }
   };
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <SessionSidebar
-        sessions={sessions}
         activeSessionId={activeSessionId}
-        isLoading={isSessionsLoading}
         onSessionSelect={(id) => setActiveSessionId(id)}
-        onNewSession={() => setActiveSessionId(crypto.randomUUID())}
+        onNewSession={() => setActiveSessionId(undefined)}
       />
       <main className="flex flex-1 flex-col overflow-hidden">
         <ChatInterface
+          sessionId={activeSessionId}
           messages={messages}
           onSendMessage={handleSendMessage}
-          isLoading={isMessagesLoading || mutation.isPending}
+          isLoading={isMessagesLoading}
+          streamingMessage={streamingMessage}
         />
       </main>
-      <MemoryPanel shortTerm={MOCK_SHORT_MEMORY} longTerm={MOCK_LONG_MEMORY} />
+      <MemoryPanel shortTerm={[]} longTerm={[]} />
     </div>
   );
 }
