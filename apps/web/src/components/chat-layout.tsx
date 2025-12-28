@@ -1,24 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { v4 as uuidv4 } from "uuid";
 import { SessionSidebar } from "@/components/session-sidebar";
 import { ChatInterface } from "@/components/chat-interface";
 import { MemoryPanel } from "@/components/memory-panel";
-import { createSession } from "@/data-access-layer/sessions";
-import { fetchMessages, saveMessage, getCompletion } from "@/data-access-layer/messages";
+import { createSession, fetchSessions } from "@/data-access-layer/sessions";
+import { saveMessage, getCompletion } from "@/data-access-layer/messages";
+import { fetchAgents } from "@/data-access-layer/agents";
 import type { Session } from "@/schemas/sessions";
 import type { Message } from "@/schemas/messages";
 
 export function ChatLayout() {
   const [activeSessionId, setActiveSessionId] = useState<string | undefined>();
   const [streamingMessage, setStreamingMessage] = useState<string>("");
+  const [selectedAgentId, setSelectedAgentId] = useState<number | undefined>();
+  const [hasInitialSessionSelected, setHasInitialSessionSelected] =
+    useState(false);
   const queryClient = useQueryClient();
 
-  const { data: messages = [], isLoading: isMessagesLoading } = useQuery({
-    queryKey: ["messages", activeSessionId],
-    queryFn: () => fetchMessages(activeSessionId!),
-    enabled: !!activeSessionId,
+  const { data: sessions = [] } = useQuery({
+    queryKey: ["sessions"],
+    queryFn: fetchSessions,
   });
+
+  const { data: agents = [] } = useQuery({
+    queryKey: ["agents"],
+    queryFn: fetchAgents,
+  });
+
+  useEffect(() => {
+    if (
+      sessions.length > 0 &&
+      activeSessionId === undefined &&
+      !hasInitialSessionSelected
+    ) {
+      setActiveSessionId(sessions[0].id);
+      setHasInitialSessionSelected(true);
+    }
+  }, [sessions, activeSessionId, hasInitialSessionSelected]);
+
+  useEffect(() => {
+    if (agents.length > 0 && selectedAgentId === undefined) {
+      setSelectedAgentId(agents[0].id);
+    }
+  }, [agents, selectedAgentId]);
 
   const sendMessageMutation = useMutation({
     mutationFn: ({
@@ -30,6 +55,7 @@ export function ChatLayout() {
     }) => saveMessage(sessionId, content),
     onMutate: async ({ sessionId, content }) => {
       await queryClient.cancelQueries({ queryKey: ["messages", sessionId] });
+      await queryClient.cancelQueries({ queryKey: ["context", sessionId] });
       const previousMessages = queryClient.getQueryData<Message[]>([
         "messages",
         sessionId,
@@ -58,6 +84,7 @@ export function ChatLayout() {
     },
     onSettled: (_data, _error, { sessionId }) => {
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["context", sessionId] });
     },
   });
 
@@ -68,6 +95,7 @@ export function ChatLayout() {
     onMutate: async ({ prompt, id }) => {
       await queryClient.cancelQueries({ queryKey: ["sessions"] });
       await queryClient.cancelQueries({ queryKey: ["messages", id] });
+      await queryClient.cancelQueries({ queryKey: ["context", id] });
       const previousSessions = queryClient.getQueryData<Session[]>([
         "sessions",
       ]);
@@ -86,15 +114,18 @@ export function ChatLayout() {
       ]);
 
       // Also set optimistic message for the new session
-      queryClient.setQueryData<Message[]>(["messages", id], [
-        {
-          id: uuidv4(),
-          content: prompt,
-          role: "user",
-          sessionId: id,
-          createdAt: new Date(),
-        },
-      ]);
+      queryClient.setQueryData<Message[]>(
+        ["messages", id],
+        [
+          {
+            id: uuidv4(),
+            content: prompt,
+            role: "user",
+            sessionId: id,
+            createdAt: new Date(),
+          },
+        ],
+      );
 
       return { previousSessions };
     },
@@ -106,6 +137,7 @@ export function ChatLayout() {
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["messages", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["context", variables.id] });
     },
   });
 
@@ -114,20 +146,23 @@ export function ChatLayout() {
 
     if (!sessionId) {
       const newSessionId = uuidv4();
-      
+
       // Optimistically set the message data before triggering any state updates
-      queryClient.setQueryData<Message[]>(["messages", newSessionId], [
-        {
-          id: uuidv4(),
-          content,
-          role: "user",
-          sessionId: newSessionId,
-          createdAt: new Date(),
-        },
-      ]);
+      queryClient.setQueryData<Message[]>(
+        ["messages", newSessionId],
+        [
+          {
+            id: uuidv4(),
+            content,
+            role: "user",
+            sessionId: newSessionId,
+            createdAt: new Date(),
+          },
+        ],
+      );
 
       setActiveSessionId(newSessionId);
-      
+
       const session = await createSessionMutation.mutateAsync({
         prompt: content,
         id: newSessionId,
@@ -139,7 +174,7 @@ export function ChatLayout() {
 
     setStreamingMessage("");
     try {
-      const stream = getCompletion(sessionId);
+      const stream = getCompletion(sessionId, selectedAgentId);
       let fullContent = "";
       for await (const chunk of stream) {
         fullContent += chunk;
@@ -147,6 +182,7 @@ export function ChatLayout() {
       }
       setStreamingMessage("");
       queryClient.invalidateQueries({ queryKey: ["messages", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["context", sessionId] });
     } catch (error) {
       console.error("Completion error:", error);
     }
@@ -162,13 +198,13 @@ export function ChatLayout() {
       <main className="flex flex-1 flex-col overflow-hidden">
         <ChatInterface
           sessionId={activeSessionId}
-          messages={messages}
           onSendMessage={handleSendMessage}
-          isLoading={isMessagesLoading}
           streamingMessage={streamingMessage}
+          selectedAgentId={selectedAgentId}
+          onAgentSelect={setSelectedAgentId}
         />
       </main>
-      <MemoryPanel shortTerm={[]} longTerm={[]} />
+      <MemoryPanel sessionId={activeSessionId} />
     </div>
   );
 }

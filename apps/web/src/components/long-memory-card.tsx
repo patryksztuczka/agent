@@ -4,9 +4,10 @@ import { EmptyState } from "@/components/empty-state"
 
 interface LongMemoryCardProps {
   entries: MemoryEntry[];
+  isLoading?: boolean;
 }
 
-export function LongMemoryCard({ entries }: LongMemoryCardProps) {
+export function LongMemoryCard({ entries, isLoading }: LongMemoryCardProps) {
   return (
     <Card className="flex h-1/2 flex-col rounded-none border-0">
       <CardHeader className="py-3">
@@ -15,7 +16,11 @@ export function LongMemoryCard({ entries }: LongMemoryCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto px-4 pb-4">
-        {entries.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+            Loading summary...
+          </div>
+        ) : entries.length === 0 ? (
           <EmptyState message="No persistent memories" />
         ) : (
           <div className="space-y-2">
@@ -29,7 +34,7 @@ export function LongMemoryCard({ entries }: LongMemoryCardProps) {
                     </span>
                   )}
                 </div>
-                <div className="text-muted-foreground">{entry.value}</div>
+                <div className="text-muted-foreground whitespace-pre-wrap">{entry.value}</div>
               </div>
             ))}
           </div>

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import sessions from './modules/sessions/sessions.controller';
+import agents from './modules/agents/agents.controller';
 
 const app = new Hono();
 
@@ -21,5 +22,6 @@ app.get('/', (c) => {
 });
 
 app.route('/api/sessions', sessions);
+app.route('/api/agents', agents);
 
 export default app;

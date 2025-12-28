@@ -4,9 +4,9 @@ export const MessageRoleEnum = z.enum(['user', 'assistant']);
 
 export const MessageSchema = z.object({
   id: z.string(),
-  role: MessageRoleEnum,
+  role: z.string(),
   content: z.string().min(1),
-  createdAt: z.string().transform((val) => new Date(val)),
+  createdAt: z.union([z.string(), z.date()]).transform((val) => new Date(val)),
   sessionId: z.string(),
 });
 

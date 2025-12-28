@@ -1,24 +1,31 @@
 import { useEffect, useRef } from "react";
-import type { Message } from "@/schemas/messages";
+import { useQuery } from "@tanstack/react-query";
+import { fetchMessages } from "@/data-access-layer/messages";
 import { MessageList } from "@/components/message-list";
 import { MessageInput } from "@/components/message-input";
 
 interface ChatInterfaceProps {
   sessionId: string | undefined;
-  messages: Message[];
   onSendMessage?: (content: string) => void;
-  isLoading?: boolean;
   streamingMessage?: string;
+  selectedAgentId?: number;
+  onAgentSelect?: (id: number) => void;
 }
 
 export function ChatInterface({
   sessionId,
-  messages,
   onSendMessage,
-  isLoading,
   streamingMessage,
+  selectedAgentId,
+  onAgentSelect,
 }: ChatInterfaceProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const { data: messages = [], isLoading } = useQuery({
+    queryKey: ["messages", sessionId],
+    queryFn: () => fetchMessages(sessionId!),
+    enabled: !!sessionId,
+  });
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -41,13 +48,16 @@ export function ChatInterface({
           ) : (
             <MessageList
               sessionId={sessionId}
-              messages={messages}
               streamingMessage={streamingMessage}
             />
           )}
         </div>
       </div>
-      <MessageInput onSend={onSendMessage} />
+      <MessageInput
+        onSend={onSendMessage}
+        selectedAgentId={selectedAgentId}
+        onAgentSelect={onAgentSelect}
+      />
     </div>
   );
 }

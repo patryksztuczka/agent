@@ -46,12 +46,14 @@ export async function saveMessage(
 
 export async function* getCompletion(
   sessionId: string,
+  agentId?: number,
 ): AsyncGenerator<string> {
   const response = await fetch(
     `${API_BASE_URL}/sessions/${sessionId}/messages/completion`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ agentId }),
     },
   );
 
